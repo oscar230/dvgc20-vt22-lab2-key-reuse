@@ -9,12 +9,11 @@ def crib_drag(ciphertext1, ciphertext2, crib):
     ct1_bytes = bytes.fromhex(ciphertext1)
     ct2_bytes = bytes.fromhex(ciphertext2)
     
-    # Ensure the ciphertexts have the same length
-    if len(ct1_bytes) != len(ct2_bytes):
-        raise ValueError("Ciphertexts must have the same length.")
+    # Use the shortest ciphertext for XORing
+    min_len = min(len(ct1_bytes), len(ct2_bytes))
     
-    # XOR the two ciphertexts together
-    xor_cts = xor_strings(ct1_bytes, ct2_bytes)
+    # XOR the two ciphertexts together up to the length of the shortest ciphertext
+    xor_cts = xor_strings(ct1_bytes[:min_len], ct2_bytes[:min_len])
     
     # Try the crib at each position
     for i in range(len(xor_cts) - len(crib) + 1):
@@ -22,6 +21,8 @@ def crib_drag(ciphertext1, ciphertext2, crib):
         # Filter out results with non-printable characters
         if all(32 <= ord(c) <= 126 for c in result):
             yield i, result
+
+
 
 
 # Test crib dragging on the provided ciphertexts with the word "the"
