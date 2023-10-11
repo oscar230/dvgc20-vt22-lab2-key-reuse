@@ -16,18 +16,19 @@ def crib_drag(combined_plaintexts, crib):
     return results
 
 if __name__ == "__main__":
-    with open("attachment", 'r', encoding="utf-8") as file:
+    with open("attachment", 'r', encoding="ASCII") as file:
         ciphertexts: list[str] = [item.replace("\n", "") for item in file.readlines()]
     c1 = ciphertexts[0]
     c2 = ciphertexts[1]
 
     xor_combined_plaintexts = xor_strings(c1, c2)
 
-    with open("1000eng.txt", 'r', encoding="utf-8") as file:
+    with open("1000eng.txt", 'r', encoding="ASCII") as file:
         cribs: list[str] = [item.replace("\n", "") for item in file.readlines()]
-    crib = cribs[0]
 
-    print("Starting crib dragging...\n")
-    for position, result in crib_drag(xor_combined_plaintexts, crib):
-        print(f"Position {position}: {result}")
+    for crib in cribs[:100]:
+        print("Starting crib dragging...\n")
+        for position, result in crib_drag(xor_combined_plaintexts, crib):
+            print(f"Position {position}: {result}")
 
+        print(crib)
