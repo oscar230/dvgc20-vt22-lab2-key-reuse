@@ -37,6 +37,14 @@ ciphertexts = [
     "32510ba9a7b2bba9b8005d43a304b5714cc0bb0c8a34884dd91304b8ad40b62b07df44ba6e9d8a2368e51d04e0e7b207b70b9b8261112bacb6c866a232dfe257527dc29398f5f3251a0d47e503c66e935de81230b59b7afb5f41afa8d661cb"
 ]
 
-# Testing the function on the first two ciphertexts with the crib "the"
-results = crib_drag(ciphertexts[0], ciphertexts[1], "the")
-print(results)
+# List of common English words to use as cribs
+cribs = ["be", "to", "of", "and"]
+
+# Dictionary to store results for each crib
+crib_results = {}
+
+# Dragging each crib across the XOR of the first two ciphertexts
+for crib in cribs:
+    crib_results[crib] = crib_drag(ciphertexts[0], ciphertexts[1], crib)
+
+print(crib_results)
