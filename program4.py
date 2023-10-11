@@ -1,3 +1,5 @@
+import itertools
+
 def xor_strings(s1, s2):
     """XOR two strings together and return the result."""
     return ''.join(chr(ord(a) ^ ord(b)) for a, b in zip(s1, s2))
@@ -15,6 +17,9 @@ def crib_drag(combined_plaintexts, crib):
         results.append((i, result))
     return results
 
+def is_eng(text):
+    return len(text) == sum(1 for char in text if char.isalpha() or char.isspace())
+
 if __name__ == "__main__":
     with open("attachment", 'r', encoding="ASCII") as file:
         ciphertexts: list[str] = [item.replace("\n", "") for item in file.readlines()]
@@ -29,6 +34,5 @@ if __name__ == "__main__":
     for crib in cribs[:100]:
         print("Starting crib dragging...\n")
         for position, result in crib_drag(xor_combined_plaintexts, crib):
-            print(f"Position {position}: {result}")
-
-        print(crib)
+            if is_eng(result):
+                print(f"{crib}\t{position}\t{result}")
