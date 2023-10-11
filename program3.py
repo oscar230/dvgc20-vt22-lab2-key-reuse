@@ -1,3 +1,5 @@
+import re
+
 def xor_hex_strings(hex_str1, hex_str2):
     """XOR two hex strings."""
     xor_result = int(hex_str1, 16) ^ int(hex_str2, 16)
@@ -29,6 +31,30 @@ def crib_drag(ciphertext1, ciphertext2, crib):
         
     return results
 
+def is_valid_english_word(word):
+    """Check if a word is likely a valid English word using a simple regex."""
+    # This regex checks for valid word patterns. It's a simple and not exhaustive check.
+    pattern = re.compile(r"^[a-zA-Z']+$")
+    return pattern.match(word) is not None
+
+def automated_crib_drag(ciphertexts, cribs):
+    """Automate the crib drag process across all pairs of ciphertexts."""
+    valid_results = {}
+    
+    # Loop over each pair of ciphertexts
+    for i in range(len(ciphertexts)):
+        for j in range(i+1, len(ciphertexts)):
+            for crib in cribs:
+                results = crib_drag(ciphertexts[i], ciphertexts[j], crib)
+                for position, word in results:
+                    if is_valid_english_word(word):
+                        # Storing the results in the format (ciphertext1_index, ciphertext2_index, position): word
+                        key = (i, j, position)
+                        if key not in valid_results:
+                            valid_results[key] = []
+                        valid_results[key].append(word)
+    return valid_results
+
 
 # Let's test the crib_drag function with the provided ciphertexts and the word "the"
 ciphertexts = [
@@ -51,11 +77,7 @@ cribs = [
     "even", "new", "want", "because", "any", "these", "give", "day", "most", "us"
 ]
 
-# Dictionary to store results for each crib
-crib_results = {}
+# Running the automated crib drag
+valid_crib_results = automated_crib_drag(ciphertexts, cribs)
 
-# Dragging each crib across the XOR of the first two ciphertexts
-for crib in cribs:
-    crib_results[crib] = crib_drag(ciphertexts[0], ciphertexts[1], crib)
-
-print(crib_results)
+print(valid_crib_results)
