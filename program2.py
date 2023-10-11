@@ -33,4 +33,4 @@ ct2 = "234c02ecbbfbafa3ed18510abd11fa724fcda2018a1a8342cf064bbde548b12b07df44ba7
 # Collect results
 results = list(crib_drag(ct1, ct2, "the"))
 
-results
+print(results)
