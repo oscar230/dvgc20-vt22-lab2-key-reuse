@@ -1,6 +1,6 @@
 def xor_strings(s1, s2):
-    """XOR two strings together and return the result."""
-    return ''.join(chr(ord(a) ^ ord(b)) for a, b in zip(s1, s2))
+    """XOR two byte sequences together and return the result."""
+    return bytes(a ^ b for a, b in zip(s1, s2))
 
 
 def crib_drag(ciphertext1, ciphertext2, crib):
@@ -15,15 +15,16 @@ def crib_drag(ciphertext1, ciphertext2, crib):
     # XOR the two ciphertexts together up to the length of the shortest ciphertext
     xor_cts = xor_strings(ct1_bytes[:min_len], ct2_bytes[:min_len])
     
+    # Convert the crib to bytes for XORing
+    crib_bytes = crib.encode('utf-8')
+    
     # Try the crib at each position
-    for i in range(len(xor_cts) - len(crib) + 1):
-        result = xor_strings(xor_cts[i:i+len(crib)], crib)
-        # Filter out results with non-printable characters
-        if all(32 <= ord(c) <= 126 for c in result):
-            yield i, result
-
-
-
+    for i in range(len(xor_cts) - len(crib_bytes) + 1):
+        result = xor_strings(xor_cts[i:i+len(crib_bytes)], crib_bytes)
+        # Convert the result back to a string and filter out results with non-printable characters
+        result_str = result.decode('utf-8', errors='ignore')
+        if all(32 <= ord(c) <= 126 for c in result_str):
+            yield i, result_str
 
 # Test crib dragging on the provided ciphertexts with the word "the"
 ct1 = "315c4eeaa8b5f8aaf9174145bf43e1784b8fa00dc71d885a804e5ee9fa40b16349c146fb778cdf2d3aff021dfff5b403b510d0d0455468aeb98622b137dae857553ccd8883a7bc37520e06e515d22c954eba5025b8cc57ee59418ce7dc6bc41556bdb36bbca3e8774301fbcaa3b83b220809560987815f65286764703de0f3d524400a19b159610b11ef3e"
