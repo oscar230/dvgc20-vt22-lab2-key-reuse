@@ -25,12 +25,16 @@ def display_cribs_with_predictions(key: str, cribs: list[str]):
 def user_select_crib(cribs: list[str]) -> str:
     while True:
         try:
-            selection_input = input(f"Select: ")
+            selection_input = input(f"Select crib: ")
+            if selection_input.lower() in ['q', 'quit', 'exit']:
+                print("Exiting the program...")
+                quit()  # This will exit the entire program
             selected_crib = cribs[int(selection_input) - 1]
             return selected_crib
         except:
-            print(f"Nope! Select between 1 and including {len(cribs)}")
-            time.sleep(0.1) # Otherwise i cannot ctrl + c
+            print(f"Nope! Select between 1 and including {len(cribs)} or type 'q' to quit.")
+            time.sleep(0.5)  # Otherwise i cannot ctrl + c
+
 
 def select_crib(key, data, position: int) -> Union[None, str]:
     cribs_at_position = list(get_cribs_at_position(data, position))
