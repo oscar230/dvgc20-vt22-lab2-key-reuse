@@ -16,12 +16,12 @@ def select_crib(key, data, position: int) -> Union[None, str]:
         return None
     else:
         prediction = llm.complete(key, cribs)
-        
         print(prediction)
+        
         for i, crib in enumerate(cribs, start=1):
             s: str = f"{i}. {key}"
             if crib == ' ':
-                s += "_ (space)"
+                s += "_"
             else:
                 s += crib
             if crib in prediction:
@@ -36,6 +36,8 @@ def select_crib(key, data, position: int) -> Union[None, str]:
             except:
                 print(f"Nope! Select between 1 and including {len(cribs)}")
                 time.sleep(0.1) # Otherwise i cannot ctrl + c
+
+        # selected_crib = max(prediction, key=prediction.get)
 
         print(f"Selected: {selected_crib}")
         return selected_crib
