@@ -24,7 +24,7 @@ if __name__ == "__main__":
     c2 = ciphertexts[1]
 
     with open("1000eng.txt", 'r', encoding="ASCII") as file:
-        common_words: list[str] = [item.replace("\n", "") for item in file.readlines()][:5]
+        common_words: list[str] = [item.replace("\n", "") for item in file.readlines()]
 
     results = {}
     
