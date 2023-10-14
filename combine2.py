@@ -1,6 +1,7 @@
 import json
 from typing import Union
 import llm
+import time
 
 def select_crib(key, data, position: int) -> Union[None, str]:
     cribs_at_position = set()  # Using a set to automatically remove any duplicates
@@ -14,13 +15,18 @@ def select_crib(key, data, position: int) -> Union[None, str]:
     if len(cribs) == 0:
         return None
     else:
+        prediction = llm.complete(key, cribs)
+        
+        print(prediction)
         for i, crib in enumerate(cribs, start=1):
+            s: str = f"{i}. {key}"
             if crib == ' ':
-                print(f"{i}. {key}_ (space)")
+                s += "_ (space)"
             else:
-                print(f"{i}. {key}{crib}")
-
-        print(f"Prediction: {llm.complete(key, cribs)}")
+                s += crib
+            if crib in prediction:
+                s += f" {prediction[crib]}"
+            print(s)
 
         selected_crib: str = ''
         while selected_crib not in cribs:
@@ -29,6 +35,7 @@ def select_crib(key, data, position: int) -> Union[None, str]:
                 selected_crib = cribs[int(selection_input) - 1]
             except:
                 print(f"Nope! Select between 1 and including {len(cribs)}")
+                time.sleep(0.1) # Otherwise i cannot ctrl + c
 
         print(f"Selected: {selected_crib}")
         return selected_crib
