@@ -1,7 +1,8 @@
 import json
 from typing import Union
+import llm
 
-def select_crib(data, position: int) -> Union[None, str]:
+def select_crib(key, data, position: int) -> Union[None, str]:
     cribs_at_position = set()  # Using a set to automatically remove any duplicates
 
     for _, results in data.items():
@@ -15,9 +16,11 @@ def select_crib(data, position: int) -> Union[None, str]:
     else:
         for i, crib in enumerate(cribs, start=1):
             if crib == ' ':
-                print(f"{i}. _SPACE_")
+                print(f"{i}. {key}_ (space)")
             else:
-                print(f"{i}. {crib}")
+                print(f"{i}. {key}{crib}")
+
+        print(f"Prediction: {llm.complete(key, cribs)}")
 
         selected_crib: str = ''
         while selected_crib not in cribs:
@@ -38,7 +41,7 @@ if __name__ == "__main__":
         while True:
             position: int = len(key)
             print(f"\tKey:\t{key}\n\tPos:\t{position + 1}")
-            key_part: Union[None, str] = select_crib(data, position)
+            key_part: Union[None, str] = select_crib(key, data, position)
             if not key_part:
                 print(key)
                 quit()
