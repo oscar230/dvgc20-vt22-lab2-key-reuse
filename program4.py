@@ -30,15 +30,21 @@ if __name__ == "__main__":
     
     # Iterate over all possible pairs of ciphertexts
     for c1, c2 in itertools.combinations(ciphertexts, 2):
-        xor_combined_plaintexts = xor_strings(c1, c2)
-        for crib in common_words:
-            for position, result in crib_drag(xor_combined_plaintexts, crib):
-                if is_eng(result) and result in common_words:
-                    key = f"{c1}___XOR___{c2}"  # using the full ciphertexts
-                    if key not in results:
-                        results[key] = []
-                    results[key].append({"crib": crib, "position": position, "result": result})
+        # Verification to ensure all ciphertexts are used
+        used_ciphertexts = set()
 
-    # Dump results to a JSON object
-    with open("crib_drag_results.json", "w") as outfile:
-        json.dump(results, outfile, indent=4)
+        for key in results.keys():
+            c1, _, c2 = key.partition("___XOR___")
+            used_ciphertexts.add(c1)
+            used_ciphertexts.add(c2)
+
+        missing_ciphertexts = set(ciphertexts) - used_ciphertexts
+
+        if not missing_ciphertexts:
+            print("All ciphertexts have been used!")
+        else:
+            print(f"{len(missing_ciphertexts)} ciphertexts were not used")
+
+        # Dump results to a JSON object
+        with open("crib_drag_results.json", "w") as outfile:
+            json.dump(results, outfile, indent=4)
