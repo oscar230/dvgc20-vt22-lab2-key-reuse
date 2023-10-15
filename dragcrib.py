@@ -19,7 +19,6 @@ def is_eng(text):
     return len(text) == sum(1 for char in text if char.isalpha() or char.isspace())
 
 if __name__ == "__main__":
-
     #
     #   Load dependencies
     #

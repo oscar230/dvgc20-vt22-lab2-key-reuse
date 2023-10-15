@@ -4,63 +4,73 @@ import llm
 import time
 import common
 
-def get_cribs_at_position(data, position: int) -> Set[str]:
+AUTO: bool = True
+
+def get_avaliable_cribs_at_position(data, position: int) -> list[str]:
     cribs_at_position = set()
     for _, results in data.items():
         for result in results:
             if result['position'] == position:
                 cribs_at_position.add(result['crib'])
-    return cribs_at_position
+    return list(cribs_at_position)
 
-def display_cribs_with_predictions(key: str, cribs: list[str]):
+def predict_crib(key: str, cribs: list[str]) -> str:
     prediction = llm.predict(key, cribs)
-    print(prediction)
-    
+    sorted_predictions = sorted(prediction.items(), key=lambda x: x[1])
+    for s in sorted_predictions:
+        print(s)
+    return sorted_predictions[0][0]
+
+def select_crib(key: str, cribs: list[str]):
+    if len(key) > 0 and key[-1] != ' ' and ' ' in cribs:
+        print("Space added.")
+        return ' '
+    else:
+        if AUTO and len(key) > 0:
+            # Make prediction using LLM
+            return predict_crib(key, cribs)
+        else:
+            # Display user interaction
+            return interactive_selection(cribs)
+
+def interactive_selection(cribs: list[str]) -> str:
+    # List cribs
     for i, crib in enumerate(cribs, start=1):
         s = f"{i}. {key}"
         s += "_" if crib == ' ' else crib
-        if crib in prediction:
-            s += f" {prediction[crib]}"
         print(s)
-
-def user_select_crib(cribs: list[str]) -> str:
+    # Interactive selection
     while True:
         try:
             selection_input = input(f"Select crib: ")
             if selection_input.lower() in ['q', 'quit', 'exit']:
-                print("Exiting the program...")
-                quit()  # This will exit the entire program
+                quit()
             selected_crib = cribs[int(selection_input) - 1]
             return selected_crib
         except:
-            print(f"Nope! Select between 1 and including {len(cribs)} or type 'q' to quit.")
+            # Selection failed, will let user try again
+            print(f"User input error! Select between 1 and including {len(cribs)} or type 'q' to quit.")
             time.sleep(0.5)  # Otherwise i cannot ctrl + c
 
-
-def select_crib(key, data, position: int) -> Union[None, str]:
-    cribs_at_position = list(get_cribs_at_position(data, position))
-    
-    if not cribs_at_position:
-        return None
-
-    display_cribs_with_predictions(key, cribs_at_position)
-    selected_crib = user_select_crib(cribs_at_position)
-    print(f"Selected: {selected_crib}")
-    return selected_crib
-
-def main():
+if __name__ == "__main__":
     with open(common.CRIBRESULTFILE, 'r') as file:
         print(f"Loading {common.CRIBRESULTFILE}, please wait...")
         data = json.load(file)
-        key = ""
-        while True:
-            position = len(key)
-            key_part = select_crib(key, data, position)
-            if not key_part:
-                print(key)
-                quit()
+    if data:
+        key: str = ""
+        next_sub_key: Union[str, None] = "#"
+        while next_sub_key:
+            # Get cribs avaliable at the key's current postition
+            next_position = len(key)
+            avaliable_cribs = get_avaliable_cribs_at_position(data, next_position)
+            if not avaliable_cribs:
+                # There are no cribs avaliable at this postition, the crib drag might be completed or this is an unexpected error
+                print("No cribs avaliable")
+                next_sub_key = None
             else:
-                key += key_part
-
-if __name__ == "__main__":
-    main()
+                # There are cribs avaliable, make a selection
+                next_sub_key = select_crib(key, avaliable_cribs)
+                key += next_sub_key
+            print(f"Key:{key}")
+        print(f"Done")
+        quit()
