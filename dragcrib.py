@@ -24,9 +24,9 @@ if __name__ == "__main__":
     #   Load dependencies
     #
     with open(common.CIPHERFILE, 'r', encoding="ASCII") as file:
-        ciphertexts: list[str] = [item.replace("\n", "") for item in file.readlines()]
+        ciphertexts: list[str] = [item.replace("\n", "") for item in file.readlines()][:3]
     with open(common.WORDFILE, 'r', encoding="ASCII") as file:
-        common_words: list[str] = [item.replace("\n", "") for item in file.readlines()]
+        common_words: list[str] = [item.replace("\n", "") for item in file.readlines()][:50]
 
     #
     #   Perform crib drag

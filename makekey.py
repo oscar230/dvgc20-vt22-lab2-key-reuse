@@ -13,7 +13,7 @@ def get_cribs_at_position(data, position: int) -> Set[str]:
     return cribs_at_position
 
 def display_cribs_with_predictions(key: str, cribs: list[str]):
-    prediction = llm.complete(key, cribs)
+    prediction = llm.predict(key, cribs)
     print(prediction)
     
     for i, crib in enumerate(cribs, start=1):
@@ -49,8 +49,8 @@ def select_crib(key, data, position: int) -> Union[None, str]:
     return selected_crib
 
 def main():
-    json_path = common.CRIBRESULTFILE
-    with open(json_path, 'r') as file:
+    with open(common.CRIBRESULTFILE, 'r') as file:
+        print(f"Loading {common.CRIBRESULTFILE}, please wait...")
         data = json.load(file)
         key = ""
         while True:
