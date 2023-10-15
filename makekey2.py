@@ -4,22 +4,9 @@ import json
 import time
 
 def interactive_selection(select_from: list[str]) -> str:
-    # List cribs
     for i, selection_option in enumerate(select_from, start=1):
         print(f"{i}. {'_' if selection_option == ' ' else selection_option}")
 
-    # Interactive selection
-    while True:
-        try:
-            selection_input = input(f"Select: ")
-            if selection_input.lower() in ['q', 'quit', 'exit']:
-                quit()
-            selected = select_from[int(selection_input) - 1]
-            return selected
-        except:
-            # Selection failed, will let user try again
-            print(f"User input error! Select between 1 and including {len(select_from)} or type 'q' to quit.")
-            time.sleep(0.5)  # Otherwise i cannot ctrl + c
 
 
 if __name__ == "__main__":
@@ -32,4 +19,25 @@ if __name__ == "__main__":
 
     key_in_hex: str = ""
     while len(key_in_hex) < key_target_length:
-        interactive_selection()
+        data_at_pos = [item for item in data if item['position'] == len(key_in_hex)]
+
+        # List selection options
+        for i, s in enumerate(data_at_pos, start=1):
+            print(f"{i}. {'_' if s == ' ' else s}")
+
+        # Interactive selection
+        selected = None
+        while not selected:
+            try:
+                selection_input = input(f"Select: ")
+                if selection_input.lower() in ['q', 'quit', 'exit']:
+                    quit()
+                selected = data_at_pos[int(selection_input) - 1]
+            except:
+                # Selection failed, will let user try again
+                print(f"User input error! Select between 1 and including {len(data_at_pos)} or type 'q' to quit.")
+                time.sleep(0.5)  # Otherwise i cannot ctrl + c
+
+        key_in_hex += common.string_to_hex(selected['guess'])
+    
+    print(f"Key: {common.hex_to_string(key_in_hex)}")
