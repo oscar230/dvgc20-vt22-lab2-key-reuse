@@ -2,6 +2,7 @@ import json
 from typing import Union, Set
 import llm
 import time
+import common
 
 def get_cribs_at_position(data, position: int) -> Set[str]:
     cribs_at_position = set()
@@ -48,7 +49,7 @@ def select_crib(key, data, position: int) -> Union[None, str]:
     return selected_crib
 
 def main():
-    json_path = "crib_drag_results.json"
+    json_path = common.CRIBRESULTFILE
     with open(json_path, 'r') as file:
         data = json.load(file)
         key = ""
