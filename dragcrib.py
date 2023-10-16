@@ -30,29 +30,30 @@ if __name__ == "__main__":
     #
     results = []
     for c1, c2 in itertools.combinations(ciphertexts, 2):
-        cx = common.xor_strings(c1, c2)
+        # For each combination of all ciphertexts
+        cx = common.xor_strings(c1, c2) # XOR ciphertext 1 and 2
         print(f"c1={c1} ^ c2={c2} -> cx={cx}")
-        for word in common_words:
-            for position, drag_result in crib_drag(cx, common.string_to_hex(word)):
-                c1xr = common.xor_strings(drag_result, c1)
-                c1xr_str = common.try_hex_to_string(c1xr)
-                if c1xr_str and is_human_readable(c1xr_str):
-                    c2xr = common.xor_strings(drag_result, c2)
-                    c2xr_str = common.try_hex_to_string(c2xr)
-                    if c2xr_str and is_human_readable(c2xr_str):
-                        result = {
-                            "cipher1": c1,
-                            "cipher2": c2,
-                            "cipher-x": cx,
-                            "position": position,
-                            "guess": word,
-                            "drag-result": drag_result,
-                            "c1xr-hex": c1xr,
-                            "c1xr-str": c1xr_str,
-                            "c2xr-hex": c2xr,
-                            "c2xr-str": c2xr_str
-                        }
-                        results.append(result)
+        for word_hex in [common.string_to_hex(item) for item in common_words]:
+            # For each word (hex) in the word list
+            for position, drag_result in crib_drag(cx, word_hex):
+                # For each position in the combined cipertexts
+                drag_x_1_str = common.xor_strings(drag_result, c1)
+                c1xr_str = common.try_hex_to_string(drag_x_1_str)
+                c2xr = common.xor_strings(drag_result, c2)
+                drag_x_2_str = common.try_hex_to_string(c2xr)
+                if c1xr_str and drag_x_2_str and is_human_readable(c1xr_str) and is_human_readable(drag_x_2_str):
+                    results.append({
+                        "position": position,
+                        "cipher-1-hex": c1,
+                        "cipher-2-hex": c2,
+                        "cipher-x-hex": cx,
+                        "word-hex": word_hex,
+                        "drag-x-hex": drag_result,
+                        "drag-x-1-hex": drag_x_1_str,
+                        "drag-x-2-hex": c1xr_str,
+                        "drag-x-1-str": drag_x_1_str,
+                        "drag-x-2-str": drag_x_2_str,
+                    })
     
     #
     #   Write results to disk
