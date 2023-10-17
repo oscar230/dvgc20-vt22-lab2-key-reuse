@@ -1,12 +1,14 @@
 import common
 import json
 import time
+import llm
 
 def interactive_print_data(data_point, key: str, index: int, ciphers: list[str]) -> None:
     p_key = key + data_point['word']
     p_c = ""
     for cipher in ciphers:
-        p_c += f"\n\t-> {common.try_hex_to_string(common.xor_strings(cipher, p_key))}"
+        plaintext = common.try_hex_to_string(common.xor_strings(cipher, p_key))
+        p_c += f"\n\t-> {plaintext}"
     print(f"{index}. Key: {common.try_hex_to_string(p_key)}{p_c}")
 
 def interactive_selection(data, key: str, ciphers: list[str]):
