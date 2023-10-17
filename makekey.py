@@ -2,34 +2,42 @@ import common
 import json
 import time
 import llm
+import math
+
+AUTO: bool = False
 
 def interactive_print_data(data_point, key: str, index: int, ciphers: list[str]) -> None:
-    p_key = key + data_point['word']
-    p_c = ""
+    possible_key = key + data_point['word']
+    possible_ciphers = ""
     for cipher in ciphers:
-        plaintext = common.try_hex_to_string(common.xor_strings(cipher, p_key))
-        p_c += f"\n\t-> {plaintext}"
-    print(f"{index}. Key: {common.try_hex_to_string(p_key)}{p_c}")
+        possible_ciphers += f"\n\t-> {common.try_hex_to_string(common.xor_strings(cipher, possible_key))}"
+    print(f"{index}. Key: {common.try_hex_to_string(possible_key)}{possible_ciphers}")
 
 def interactive_selection(data, key: str, ciphers: list[str]):
-    if len(data) == 0:
-        print("Error, no data!")
-        quit()
-    elif len(data) == 1:
-        return data[0]
-    else:
-        # List selection options
-        for index, data_point in enumerate(data, start=1):
-            interactive_print_data(data_point, key, index, ciphers)
+    # List selection options
+    for index, data_point in enumerate(data, start=1):
+        interactive_print_data(data_point, key, index, ciphers)
 
-        # Interactive selection
-        while True:
-            try:
-                return data[int(input(f"Select: ")) - 1]
-            except:
-                # Selection failed
-                print(f"User input error! Select between 1 and including {len(data)} (Ctrl + C to quit)")
-                time.sleep(0.5)
+    # Interactive selection
+    while True:
+        try:
+            return data[int(input(f"Select: ")) - 1]
+        except:
+            # Selection failed
+            print(f"User input error! Select between 1 and including {len(data)} (Ctrl + C to quit)")
+            time.sleep(0.5)
+
+def automatic_selection(data, key: str, ciphers: list[str]):
+    for item in data:
+        possible_key = key + item['word']
+        plaintexts = []
+        for cipher in ciphers:
+            decrypted = common.xor_strings(cipher, possible_key)
+            decrypted_str = common.try_hex_to_string(decrypted)
+            plaintexts.append(decrypted_str)
+            item[cipher] = decrypted_str
+        item['score'] = sum(score for score in llm.score_sentences(plaintexts) if not math.isnan(score))
+    return max(data, key=lambda x: x['score'])
 
 if __name__ == "__main__":
     # Load data
@@ -49,7 +57,15 @@ if __name__ == "__main__":
     key: str = ""
     while len(key) < target_key_len:
         data_at_current_pos = [item for item in data if item['position'] == len(key)]
-        key += interactive_selection(data_at_current_pos, key, ciphers)['word']
+        if len(data_at_current_pos) == 0:
+            print("Error, no data!")
+            quit()
+        elif len(data_at_current_pos) == 1:
+            key += data_at_current_pos[0]['word']
+        elif AUTO:
+            key += automatic_selection(data_at_current_pos, key, ciphers)
+        else:
+            key += interactive_selection(data_at_current_pos, key, ciphers)['word']
     
     # Decrypting ciphers
     plaintexts: list[str] = []
