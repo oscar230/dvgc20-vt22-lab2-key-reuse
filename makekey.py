@@ -3,8 +3,6 @@ import json
 import time
 import os
 
-AUTO: bool = False
-
 def interactive_print_data(data_point, key: str, index: int, ciphers: list[str]) -> None:
     possible_key = key + data_point['word']
     possible_ciphers = ""
@@ -26,18 +24,6 @@ def interactive_selection(data, key: str, ciphers: list[str]):
             print(f"User input error! Select between 1 and including {len(data)} (Ctrl + C to quit)")
             time.sleep(0.5)
 
-# def llm_filter(data, key: str, ciphers: list[str]):
-#     for item in data:
-#         possible_key = key + item['word']
-#         plaintexts = []
-#         for cipher in ciphers:
-#             decrypted = common.xor_strings(cipher, possible_key)
-#             decrypted_str = common.try_hex_to_string(decrypted)
-#             plaintexts.append(decrypted_str)
-#             item[cipher] = decrypted_str
-#         item['ok'] = True if all(llm.could_be_valid_substring(item) for item in plaintexts) else False
-#     return [a for a in data if a['ok']]
-
 if __name__ == "__main__":
     # Load data
     print(f"Loading data from file \"{common.CRIBRESULTFILE}\" please wait...")
@@ -55,9 +41,13 @@ if __name__ == "__main__":
     # Iterate over all (likely) combinations and build a key
     key: str = ""
     while len(key) < target_key_len:
+        # Filter by position
         data_at_current_pos = [item for item in data if item['position'] == len(key)]
 
+        # Get all unique words
         words: list[str] = list(set([item['word'] for item in data_at_current_pos]))
+
+        # Filter by word
         data_at_current_pos_by_word = []
         for word in words:
             data_at_current_pos_by_word.append([item for item in data_at_current_pos if item['word'] == word][0])
@@ -67,11 +57,12 @@ if __name__ == "__main__":
             quit()
         elif len(data_at_current_pos_by_word) == 1:
             key += data_at_current_pos_by_word[0]['word']
-        # elif AUTO:
-        #     key += interactive_selection(llm_filter(data_at_current_pos_by_word, key, ciphers), key, ciphers)['word']
         else:
             key += interactive_selection(data_at_current_pos_by_word, key, ciphers)['word']
-            os.system('cls' if os.name == 'nt' else 'clear')
+            try:
+                os.system('cls' if os.name == 'nt' else 'clear')
+            except:
+              print("Could not clear the terminal")
     
     # Decrypting ciphers
     plaintexts: list[str] = []
