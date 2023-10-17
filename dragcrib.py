@@ -23,7 +23,10 @@ if __name__ == "__main__":
     with open(common.CIPHERFILE, 'r', encoding=common.ENCODING) as file:
         ciphertexts: list[str] = [item.replace("\n", "") for item in file.readlines()]
     with open(common.WORDFILE, 'r', encoding=common.ENCODING) as file:
-        common_words: list[str] = [item.replace("\n", "") for item in file.readlines()][:5]
+        common_words: list[str] = [item.replace("\n", "") for item in file.readlines()][:2]
+    
+    for c in common_words:
+        print(c)
 
     #
     #   Perform crib drag
@@ -37,22 +40,26 @@ if __name__ == "__main__":
             # For each word (hex) in the word list
             for position, drag_result in crib_drag(cx, word_hex):
                 # For each position in the combined cipertexts
-                drag_x_1_str = common.xor_strings(drag_result, c1)
-                c1xr_str = common.try_hex_to_string(drag_x_1_str)
-                c2xr = common.xor_strings(drag_result, c2)
-                drag_x_2_str = common.try_hex_to_string(c2xr)
-                if c1xr_str and drag_x_2_str and is_human_readable(c1xr_str) and is_human_readable(drag_x_2_str):
+
+                # Combine cipher 1 and 2 with the crib drag result
+                drag_x_1_hex = common.xor_strings(drag_result, c1[position:])
+                drag_x_2_hex = common.xor_strings(drag_result, c2[position:])
+
+                # Try and convert results from previous step to strings
+                drag_x_1_str = common.try_hex_to_string(drag_x_1_hex)
+                drag_x_2_str = common.try_hex_to_string(drag_x_2_hex)
+
+                # If these string are human readable (and not have failed to convert), write result
+                if drag_x_1_str and drag_x_2_str and is_human_readable(drag_x_1_str) and is_human_readable(drag_x_2_str):
                     results.append({
+                        "cipher-1": c1,
+                        "cipher-2": c2,
+                        "cipher-x": cx,
                         "position": position,
-                        "cipher-1-hex": c1,
-                        "cipher-2-hex": c2,
-                        "cipher-x-hex": cx,
-                        "word-hex": word_hex,
-                        "drag-x-hex": drag_result,
-                        "drag-x-1-hex": drag_x_1_str,
-                        "drag-x-2-hex": c1xr_str,
-                        "drag-x-1-str": drag_x_1_str,
-                        "drag-x-2-str": drag_x_2_str,
+                        "word": word_hex,
+                        "drag-x": drag_result,
+                        "drag-x-1": drag_x_1_hex,
+                        "drag-x-2": drag_x_2_hex,
                     })
     
     #
@@ -61,3 +68,5 @@ if __name__ == "__main__":
     with open(common.CRIBRESULTFILE, "w") as file:
         json.dump(results, file, indent=common.JSONINDENT)
         print(f"Wrote results to file {common.CRIBRESULTFILE}")
+
+    quit()

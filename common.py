@@ -3,6 +3,7 @@ from typing import Union
 CRIBRESULTFILE = "crib-results.json"
 CIPHERFILE = "attachment-easy"
 WORDFILE = "1000eng.txt"
+RESULTSFILE = "results.json"
 JSONINDENT = 4
 ENCODING = "ASCII"
 
