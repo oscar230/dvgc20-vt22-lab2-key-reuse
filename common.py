@@ -1,7 +1,7 @@
 from typing import Union
 
 CRIBRESULTFILE = "crib-results.json"
-CIPHERFILE = "attachment-easy"
+CIPHERFILE = "attachment"
 WORDFILE = "wordlist"
 RESULTSFILE = "results.json"
 JSONINDENT = 4

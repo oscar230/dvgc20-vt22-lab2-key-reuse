@@ -4,7 +4,7 @@ import common
 import string
 
 def is_human_readable(text) -> bool:
-    human_readable_chars = string.ascii_uppercase + string.ascii_lowercase + string.ascii_letters + ' ' + '.' #string.printable[:-5]
+    human_readable_chars = string.ascii_uppercase + string.ascii_lowercase + string.ascii_letters + ' ' + '.'
     return all(char in human_readable_chars for char in text)
 
 def crib_drag(ciphertexts_xored: str, crib: str) -> list[str]:
@@ -23,7 +23,7 @@ if __name__ == "__main__":
     with open(common.CIPHERFILE, 'r', encoding=common.ENCODING) as file:
         ciphertexts: list[str] = [item.replace("\n", "") for item in file.readlines()]
     with open(common.WORDFILE, 'r', encoding=common.ENCODING) as file:
-        common_words: list[str] = [item.replace("\n", "") for item in file.readlines()]
+        common_words: list[str] = [item.replace("\n", "") for item in file.readlines()][:100]
 
     #
     #   Perform crib drag

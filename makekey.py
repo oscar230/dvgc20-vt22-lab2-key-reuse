@@ -1,8 +1,7 @@
 import common
 import json
 import time
-import llm
-import math
+import os
 
 AUTO: bool = False
 
@@ -27,17 +26,17 @@ def interactive_selection(data, key: str, ciphers: list[str]):
             print(f"User input error! Select between 1 and including {len(data)} (Ctrl + C to quit)")
             time.sleep(0.5)
 
-def automatic_selection(data, key: str, ciphers: list[str]):
-    for item in data:
-        possible_key = key + item['word']
-        plaintexts = []
-        for cipher in ciphers:
-            decrypted = common.xor_strings(cipher, possible_key)
-            decrypted_str = common.try_hex_to_string(decrypted)
-            plaintexts.append(decrypted_str)
-            item[cipher] = decrypted_str
-        item['score'] = sum(score for score in llm.score_sentences(plaintexts) if not math.isnan(score))
-    return max(data, key=lambda x: x['score'])
+# def llm_filter(data, key: str, ciphers: list[str]):
+#     for item in data:
+#         possible_key = key + item['word']
+#         plaintexts = []
+#         for cipher in ciphers:
+#             decrypted = common.xor_strings(cipher, possible_key)
+#             decrypted_str = common.try_hex_to_string(decrypted)
+#             plaintexts.append(decrypted_str)
+#             item[cipher] = decrypted_str
+#         item['ok'] = True if all(llm.could_be_valid_substring(item) for item in plaintexts) else False
+#     return [a for a in data if a['ok']]
 
 if __name__ == "__main__":
     # Load data
@@ -57,15 +56,22 @@ if __name__ == "__main__":
     key: str = ""
     while len(key) < target_key_len:
         data_at_current_pos = [item for item in data if item['position'] == len(key)]
-        if len(data_at_current_pos) == 0:
+
+        words: list[str] = list(set([item['word'] for item in data_at_current_pos]))
+        data_at_current_pos_by_word = []
+        for word in words:
+            data_at_current_pos_by_word.append([item for item in data_at_current_pos if item['word'] == word][0])
+        
+        if len(data_at_current_pos_by_word) == 0:
             print("Error, no data!")
             quit()
-        elif len(data_at_current_pos) == 1:
-            key += data_at_current_pos[0]['word']
-        elif AUTO:
-            key += automatic_selection(data_at_current_pos, key, ciphers)
+        elif len(data_at_current_pos_by_word) == 1:
+            key += data_at_current_pos_by_word[0]['word']
+        # elif AUTO:
+        #     key += interactive_selection(llm_filter(data_at_current_pos_by_word, key, ciphers), key, ciphers)['word']
         else:
-            key += interactive_selection(data_at_current_pos, key, ciphers)['word']
+            key += interactive_selection(data_at_current_pos_by_word, key, ciphers)['word']
+            os.system('cls' if os.name == 'nt' else 'clear')
     
     # Decrypting ciphers
     plaintexts: list[str] = []

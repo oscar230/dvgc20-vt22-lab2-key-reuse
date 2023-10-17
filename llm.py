@@ -1,18 +1,30 @@
-from transformers import GPT2LMHeadModel, GPT2Tokenizer
 import torch
+from transformers import GPT2Tokenizer, GPT2LMHeadModel
 
-tokenizer = GPT2Tokenizer.from_pretrained("gpt2-medium")
-model = GPT2LMHeadModel.from_pretrained("gpt2-medium")
+# Load pre-trained model and tokenizer
+model_name = "gpt2"
+model = GPT2LMHeadModel.from_pretrained(model_name)
+tokenizer = GPT2Tokenizer.from_pretrained(model_name)
 model.eval()
-model.to('cuda')
 
-def score_sentences(sentences: list[str]) -> list:
-    return [score_sentence(s) for s in sentences]
+def could_be_valid_substring(substring):
+    # Convert input string to token ids
+    input_ids = tokenizer.encode(substring, return_tensors="pt")
 
-def score_sentence(sentence: str) -> float:
-    input_ids = tokenizer.encode(sentence, return_tensors="pt")
+    # Generate a continuation
     with torch.no_grad():
-        output = model(input_ids, labels=input_ids)
-    loss = output.loss
-    loss_score = -loss.item() # smaller loss i better
-    return -loss_score # return inverted
+        output = model.generate(input_ids, max_length=50, num_return_sequences=1)
+
+    # Decode the output ids to strings
+    generated_text = tokenizer.decode(output[0], skip_special_tokens=True)
+    
+    # If the generated text is much longer than the input, it means the model was able to generate a continuation
+    if len(generated_text) > len(substring) + 5:  # added a threshold of 5 chars to avoid minor extensions
+        return True
+    else:
+        return False
+
+# Testing the function
+test_strings = ["Hxyli", "ex"]
+results = {s: could_be_valid_substring(s) for s in test_strings}
+print(results)
