@@ -1,10 +1,18 @@
 # dvgc20-vt22-lab2-key-reuse
 Lab 2: Key Reuse Karlstad University
 
-## Run
+## Use
+Install requirements.
 ```bash
+    $ sudo apt install python3
     $ pip install -r requirements.txt
-    $ python3 program.py
+```
+Run the program.
+1. Perform the crib drag by dragging the crib with `dragcrib.py`.
+2. Then build the key with `makekey.py`.
+```bash
+    $ python3 dragcrib.py
+    $ python3 makekey.py
 ```
 
 ## Sources
