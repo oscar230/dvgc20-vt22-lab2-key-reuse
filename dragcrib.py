@@ -23,10 +23,7 @@ if __name__ == "__main__":
     with open(common.CIPHERFILE, 'r', encoding=common.ENCODING) as file:
         ciphertexts: list[str] = [item.replace("\n", "") for item in file.readlines()]
     with open(common.WORDFILE, 'r', encoding=common.ENCODING) as file:
-        common_words: list[str] = [item.replace("\n", "") for item in file.readlines()][:2]
-    
-    for c in common_words:
-        print(c)
+        common_words: list[str] = [item.replace("\n", "") for item in file.readlines()]
 
     #
     #   Perform crib drag
