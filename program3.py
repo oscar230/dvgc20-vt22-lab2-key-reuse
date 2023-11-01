@@ -28,15 +28,19 @@ class Cipher:
     def __init__(self, cipher: str) -> None:
         self.cipher = cipher
 
-    def to_plaintext(self, key: str) -> str:
-        print(f"{len(key)}\t{key}")
-        print(f"{len(self.cipher)}\t{self.cipher}")
+    def to_plaintext(self, key_parts: list[KeyPart], key_len: int) -> str:
+        # Build key
+        key: str = build_key(key_parts, key_len)
+        
+        print(f"Key      {key} ({common.try_hex_to_string(key)})")
+        print(f"Cipher   {self.cipher}")
+
         plaintext: str = ""
         for i in range(0, len(key), 2):
-            if self.cipher[i:i+2] == common.PLACEHOLDER_CHAR:
+            if self.cipher[i:i+2] == common.PADDING_CHAR or key[i:i+2] == common.PADDING_CHAR:
                 # Current character is a placeholder character
                 # Should be represented by another character
-                plaintext += common.PLACEHOLDER_CHAR
+                plaintext += common.PADDING_DISPLAY_CHAR
             else:
                 new_char: str = common.xor_strings(self.cipher[i:i+2], key[i:i+2])
 
@@ -45,8 +49,8 @@ class Cipher:
                     # Should be added to key
                     plaintext += new_char
                 else:
-                    # Current character is hard to read, represent with another character
-                    plaintext += common.UNREADABLE_REPLACEMENT_CHAR_DISPLAY
+                    # Current character cannot be read
+                    plaintext += common.PADDING_DISPLAY_CHAR
             
             print(f"pos={i}\t{self.cipher[i:i+2]} ^ {key[i:i+2]} = {common.xor_strings(self.cipher[i:i+2], key[i:i+2])} ==> {plaintext}")
         return plaintext
@@ -58,7 +62,7 @@ def build_key(key_parts: list[KeyPart], key_len: int) -> str:
             if any([a for a in key_parts if a.position == i]):
                 key += [a for a in key_parts if a.position == i][0].key_part
             else:
-                key += common.PLACEHOLDER_CHAR
+                key += common.PADDING_CHAR
     return key
 
 def load_words() -> list[Word]:
@@ -89,10 +93,9 @@ if __name__ == "__main__":
         for curr_pos in range(0, len(cipher_x.cipher) - len(word.word) + 1, 2):
             current_key_parts: list[KeyPart] = list(key_parts)
             current_key_parts.append(KeyPart(curr_pos, word.word))
-            curr_key: str = build_key(current_key_parts, key_len)
-            plaintext: str = cipher_x.to_plaintext(curr_key)
+            plaintext: str = cipher_x.to_plaintext(current_key_parts, key_len)
             print("cipher x\tkey\tplaintext")
-            print(f"{cipher_x.cipher} ^ {curr_key} = {plaintext} = {common.try_hex_to_string(plaintext)}")
+            print(f"{cipher_x.cipher} ^ key = {plaintext} = {common.try_hex_to_string(plaintext)}")
             
             e: str = ""
             f = common.try_hex_to_string(plaintext)

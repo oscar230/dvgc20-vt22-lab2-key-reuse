@@ -6,9 +6,9 @@ WORDFILE = "wordlist"
 RESULTSFILE = "results.json"
 JSONINDENT = 4
 ENCODING = "ASCII"
-PLACEHOLDER_CHAR: str = '11' # This is the NULL character in the ASCII char set
-PLACEHOLDER_CHAR_DISPLAY: str = '5f' # This is a underscore
-UNREADABLE_REPLACEMENT_CHAR_DISPLAY: str = '7e' # This is... this ~
+PADDING_CHAR: str = '00' # This is the NULL character in the ASCII char set
+PADDING_DISPLAY_CHAR: str = '5f' # This is a underscore
+# UNREADABLE_REPLACEMENT_CHAR_DISPLAY: str = '7e' # This is... this ~
 
 def xor_strings(hex1, hex2):
     # XOR two HEX strings
