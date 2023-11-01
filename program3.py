@@ -36,6 +36,10 @@ class Cipher:
         self.cipher = cipher
 
     def decrypt(self, key: str) -> str:
+        return common.xor_strings(self.cipher, key)
+
+
+    def decrypt_display(self, key: str) -> str:
         if len(key) == len(self.cipher):
             plaintext: str = ''
             for i in range(0, len(self.cipher), 2):
@@ -95,13 +99,6 @@ class Keyring:
             else:
                 key += common.PADDING_CHAR
         return key
-    
-    def done(self) -> bool:
-        key: Union[str, None] = self.build_key(None)
-        if key:
-            return len(key) >= self.key_len
-        else:
-            return False
 
 def load_words() -> list[Word]:
     with open(common.WORDFILE, 'r', encoding = common.ENCODING) as file:
@@ -114,8 +111,10 @@ def pick_position(keyring: Keyring, word: Word) -> Union[KeyPart, None]:
     for curr_pos in range(0, keyring.key_len - len(word.word) + 2, 2):
         optional_key_part: KeyPart = KeyPart(curr_pos, word.word)
         optional_key: str = keyring.build_key(optional_key_part)
+
         plaintext: str = keyring.cipher_x.decrypt(optional_key)
-        pick_options.append(f'{curr_pos}\t{common.try_hex_to_string(plaintext)} (hex: {plaintext})')
+        plaintext_display: str = keyring.cipher_x.decrypt_display(optional_key)
+        pick_options.append(f'{curr_pos}\t{common.hex_to_string(plaintext_display)} (hex: {plaintext_display}/{plaintext})')
     _, index = pick(pick_options, f'Select position for word \"{word}\" for key \"{keyring.build_key(None)}\".\n- \"{common.hex_to_string(common.PADDING_DISPLAY_CHAR)}\" are padding since the key is not yet complete.\n- \"{common.hex_to_string(common.UNREADABLE_DISPLAY_CHAR)}\" are unreadable characters.')
     if index == 0:
         return None
@@ -138,7 +137,7 @@ if __name__ == "__main__":
     keyring: Keyring = Keyring()
 
     done: bool = False
-    while not done or keyring.done():
+    while not done:
         word: Union[Word, None] = pick_word(words)
         if word:
             new_key_part: Union[KeyPart, None] = pick_position(keyring, word)
