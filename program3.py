@@ -10,9 +10,16 @@ class KeyPart:
         self.position = position
         self.key_part = key_part
 
-    def end_position(self) -> int:
+    def last_position(self) -> int:
         return self.position + len(self.key_part) - 1
     
+    def is_in_range(self, position: int) -> bool:
+        return self.position >= position and self.last_position() <= position
+    
+    def get_char(self, position: int) -> str:
+        x: int = position - self.position
+        return self.key_part[x:x+2]
+
 class Word:
     word: str
 
@@ -21,87 +28,99 @@ class Word:
 
     def __str__(self):
      return common.hex_to_string(self.word)
-        
+
 class Cipher:
     cipher: str
 
     def __init__(self, cipher: str) -> None:
         self.cipher = cipher
 
-    def to_plaintext(self, key_parts: list[KeyPart], key_len: int) -> str:
-        # Build key
-        key: str = build_key(key_parts, key_len)
-        
-        print(f"Building key {key} from word \"{common.try_hex_to_string(key)}\" for cipher {self.cipher}")
-
-        plaintext: str = ""
-        for i in range(0, len(key), 2):
-            if self.cipher[i:i+2] == common.PADDING_CHAR or key[i:i+2] == common.PADDING_CHAR:
-                # Current character is a placeholder character
-                # Should be represented by another character
-                plaintext += common.PADDING_DISPLAY_CHAR
-            else:
-                new_char: str = common.xor_strings(self.cipher[i:i+2], key[i:i+2])
-
-                if common.is_readable(new_char):
-                    # Current character is readable
-                    # Should be added to key
-                    plaintext += new_char
-                else:
-                    # Current character cannot be read
+    def decrypt(self, key: str) -> str:
+        if len(key) == len(self.cipher):
+            plaintext: str = ''
+            for i in range(0, len(self.cipher), 2):
+                if key[i:i+2] == common.PADDING_CHAR:
+                    # Should be represented by another character than the padding character
                     plaintext += common.PADDING_DISPLAY_CHAR
-            
-            # print(f"pos={i}\t{self.cipher[i:i+2]} ^ {key[i:i+2]} = {common.xor_strings(self.cipher[i:i+2], key[i:i+2])} ==> {plaintext}")
-        return plaintext
+                else:
+                    decrypted_char_at_i: str = common.xor_strings(self.cipher[i:i+2], key[i:i+2])
+                    if common.is_readable(decrypted_char_at_i):
+                        plaintext += decrypted_char_at_i
+                    else:
+                        # Current character cannot be read, represent with something else
+                        plaintext += common.UNREADABLE_DISPLAY_CHAR
+            return plaintext
+        print("Cannot decrypt cipher if key is not of the same size as the cipher!")
+        quit()
 
-def build_key(key_parts: list[KeyPart], key_len: int) -> str:
-    key: str = "" # Hex
-    for i in range(0, key_len + 2, 2): # Skip every other becouse of hex being represenated as a string
-        if len(key) < i:
-            if any([a for a in key_parts if a.position == i]):
-                key += [a for a in key_parts if a.position == i][0].key_part
+class Keyring:
+    ciphers: list[Cipher]
+    cipher_x: Cipher
+    key_parts: list[KeyPart]
+    key_len: int
+
+    def __init__(self) -> None:
+        with open(common.CIPHERFILE, 'r', encoding = common.ENCODING) as file:
+            ciphers: list[str] = [item.replace("\n", "") for item in file.readlines()]
+            ciphers = sorted(ciphers, key=len, reverse=True)
+            self.cipher_x = Cipher(common.xor_strings(ciphers[0], ciphers[1]))
+            self.key_len = len(ciphers[0])
+            self.ciphers = [Cipher(item) for item in ciphers]
+            self.key_parts = []
+
+    def add_key_part(self, key_part: KeyPart) -> bool:
+        if self.does_key_part_fit(key_part):
+            self.key_parts.append(key_part)
+            return True
+        else:
+            return False
+    
+    def does_key_part_fit(self, key_part: KeyPart) -> bool:
+        if key_part.last_position() > self.key_len - 1:
+            return False
+        for i in range(key_part.position, key_part.last_position() + 1, 2):
+            if any(item for item in self.key_parts if item.is_in_range(i)):
+                return True
+        return False
+
+    def build_key(self, additional_key_part: Union[KeyPart, None]) -> str:
+        key_parts: list[KeyPart] = list(self.key_parts)
+        key: str = ''
+        if additional_key_part:
+            key_parts.append(additional_key_part)
+        for i in range(0, self.key_len, 2):
+            if any([a for a in key_parts if a.is_in_range(i)]):
+                curr_key_part: KeyPart = [a for a in key_parts if a.is_in_range(i)][0]
+                key += curr_key_part.get_char(i)
             else:
                 key += common.PADDING_CHAR
-    return key
+        return key
+    
+    def done(self) -> bool:
+        key: Union[str, None] = self.build_key(None)
+        if key:
+            return len(key) >= self.key_len
+        else:
+            return False
 
 def load_words() -> list[Word]:
     with open(common.WORDFILE, 'r', encoding = common.ENCODING) as file:
         words: list[str] = [item.replace("\n", "") for item in file.readlines()]
         return [Word(word) for word in words]
 
-def load_ciphers() -> tuple[list[Cipher], int]:
-    with open(common.CIPHERFILE, 'r', encoding = common.ENCODING) as file:
-        ciphers: list[str] = [item.replace("\n", "") for item in file.readlines()]
-        ciphers = sorted(ciphers, key=len, reverse=True)
-        return [Cipher(item) for item in ciphers], len(ciphers[0])
-
-def pick_position(word: Word, cipher_x: Cipher, key_parts: list[KeyPart]) -> Union[KeyPart, None]:
+def pick_position(keyring: Keyring, word: Word) -> Union[KeyPart, None]:
     pick_options: list = []
     pick_options.append("## Go back ##")
-    new_key_parts: list[KeyPart] = []
-    print(len(cipher_x.cipher))
-    print(len(word.word))
-    for curr_pos in range(0, len(cipher_x.cipher) - len(word.word) + 2, 2):
-        current_key_parts: list[KeyPart] = list(key_parts)
-
-        new_key_part: KeyPart = KeyPart(curr_pos, word.word)
-        new_key_parts.append(new_key_part)
-        current_key_parts.append(new_key_part)
-
-        plaintext: str = cipher_x.to_plaintext(current_key_parts, key_len)
-        
-        print(f"{cipher_x.cipher} ^ key = {plaintext} = {common.try_hex_to_string(plaintext)}")
-
+    for curr_pos in range(0, keyring.key_len - len(word.word) + 2, 2):
+        optional_key_part: KeyPart = KeyPart(curr_pos, word.word)
+        optional_key: str = keyring.build_key(optional_key_part)
+        plaintext: str = keyring.cipher_x.decrypt(optional_key)
         pick_options.append(f'{curr_pos}\t{common.try_hex_to_string(plaintext)} (hex: {plaintext})')
-
-    # Build key for display
-    key: str = build_key(key_parts, key_len)
-
-    _, index = pick(pick_options, f'Select position for word \"{word}\" for key \"{key}\".')
+    _, index = pick(pick_options, f'Select position for word \"{word}\" for key \"{keyring.build_key(None)}\".\n- \"{common.hex_to_string(common.PADDING_DISPLAY_CHAR)}\" are padding since the key is not yet complete.\n- \"{common.hex_to_string(common.UNREADABLE_DISPLAY_CHAR)}\" are unreadable characters.')
     if index == 0:
         return None
     else:
-        return new_key_parts[index - 1]
+        return KeyPart(index - 1, word.word)
 
 def pick_word(words: list[Word]) -> Union[Word, None]:
     pick_options: list = []
@@ -115,24 +134,17 @@ def pick_word(words: list[Word]) -> Union[Word, None]:
         return words[index - 1]
 
 if __name__ == "__main__":
-    ciphers: list[Cipher]
-    key_len: int
-    ciphers, key_len = load_ciphers()
     words: list[Word] = load_words()
-
-    key_parts: list[KeyPart] = []
-
-    # XOR the two longest ciphers
-    cipher_x: Cipher = Cipher(common.xor_strings(ciphers[0].cipher, ciphers[1].cipher))
+    keyring: Keyring = Keyring()
 
     done: bool = False
-    while not done:
+    while not done or keyring.done():
         word: Union[Word, None] = pick_word(words)
         if word:
-            new_key_part: Union[KeyPart, None] = pick_position(word, cipher_x, key_parts)
+            new_key_part: Union[KeyPart, None] = pick_position(keyring, word)
             if new_key_part:
-                key_parts.append(new_key_part)
+                keyring.add_key_part(new_key_part)
         else:
             done = True
     
-    print(f"Done :)\nKey\t{build_key(key_parts, key_len)}")
+    print(f"Done!\nKey\t{keyring.build_key(None)}")
