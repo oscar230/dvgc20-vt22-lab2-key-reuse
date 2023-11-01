@@ -32,8 +32,7 @@ class Cipher:
         # Build key
         key: str = build_key(key_parts, key_len)
         
-        # print(f"Key      {key} ({common.try_hex_to_string(key)})")
-        # print(f"Cipher   {self.cipher}")
+        print(f"Building key {key} from word \"{common.try_hex_to_string(key)}\" for cipher {self.cipher}")
 
         plaintext: str = ""
         for i in range(0, len(key), 2):
@@ -78,9 +77,11 @@ def load_ciphers() -> tuple[list[Cipher], int]:
 
 def pick_position(word: Word, cipher_x: Cipher, key_parts: list[KeyPart]) -> Union[KeyPart, None]:
     pick_options: list = []
-    pick_options.append("## done ##")
+    pick_options.append("## Go back ##")
     new_key_parts: list[KeyPart] = []
-    for curr_pos in range(0, len(cipher_x.cipher) - len(word.word) + 1, 2):
+    print(len(cipher_x.cipher))
+    print(len(word.word))
+    for curr_pos in range(0, len(cipher_x.cipher) - len(word.word) + 2, 2):
         current_key_parts: list[KeyPart] = list(key_parts)
 
         new_key_part: KeyPart = KeyPart(curr_pos, word.word)
@@ -89,25 +90,22 @@ def pick_position(word: Word, cipher_x: Cipher, key_parts: list[KeyPart]) -> Uni
 
         plaintext: str = cipher_x.to_plaintext(current_key_parts, key_len)
         
-        # print("cipher x\tkey\tplaintext")
-        # print(f"{cipher_x.cipher} ^ key = {plaintext} = {common.try_hex_to_string(plaintext)}")
-        
-        # Eeeh!
-        e: str = ""
-        f = common.try_hex_to_string(plaintext)
-        if f:
-            e = f
+        print(f"{cipher_x.cipher} ^ key = {plaintext} = {common.try_hex_to_string(plaintext)}")
 
-        pick_options.append(f'{curr_pos}\t{e} ({plaintext})')
-    _, index = pick(pick_options, f'Select position for word \"{word}\".')
+        pick_options.append(f'{curr_pos}\t{common.try_hex_to_string(plaintext)} (hex: {plaintext})')
+
+    # Build key for display
+    key: str = build_key(key_parts, key_len)
+
+    _, index = pick(pick_options, f'Select position for word \"{word}\" for key \"{key}\".')
     if index == 0:
         return None
     else:
         return new_key_parts[index - 1]
 
-def pick_word(words: list[Word]) -> Union[KeyPart, None]:
+def pick_word(words: list[Word]) -> Union[Word, None]:
     pick_options: list = []
-    pick_options.append("## done ##")
+    pick_options.append("## Done ##")
     for word in words:
         pick_options.append(f"{word}")
     _, index = pick(pick_options, f'Select a word to drag.')
@@ -134,8 +132,6 @@ if __name__ == "__main__":
             new_key_part: Union[KeyPart, None] = pick_position(word, cipher_x, key_parts)
             if new_key_part:
                 key_parts.append(new_key_part)
-            else:
-                done = True
         else:
             done = True
     
