@@ -1,14 +1,19 @@
 import common
 from typing import Union
 import itertools
+import os
 
-PLACEHOLDERCHAR: str = common.hex_to_string("00")
+PLACEHOLDERCHAR: str = "23" # As hex
 
 def readable() -> str:
     return 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ .123456789'
 
-def is_readable(input: str) -> bool:
-    return all(char in readable() for char in input)
+def is_readable(input: Union[str, None]) -> bool:
+    if input:
+        input = input.replace(common.hex_to_string(PLACEHOLDERCHAR), '')
+        return all(char in readable() for char in input)
+    else:
+        return False
 
 def crib_drag(ciphertexts_xored: str, crib: str) -> list[str]:
     results = []
@@ -23,7 +28,7 @@ def build_key(key_parts: list, length: int) -> str:
     for i in range(0, length):
         keys_at_pos: list = [item for item in key_parts if item['pos'] <= i and item['pos'] + len(item['key']) - 1 >= i]
         if not keys_at_pos:
-            key += common.string_to_hex(PLACEHOLDERCHAR)
+            key += PLACEHOLDERCHAR
         elif len(keys_at_pos) == 1:
             key += keys_at_pos[0]['key'][i - keys_at_pos[0]['pos']]
         else:
@@ -57,17 +62,23 @@ if __name__ == "__main__":
     
     # Load word list
     with open(common.WORDFILE, 'r', encoding=common.ENCODING) as file:
-        words: list[str] = [item.replace("\n", "") for item in file.readlines()][:10]
+        words: list[str] = [item.replace("\n", "") for item in file.readlines()][:20]
 
     # In preperation, hex all the words from the wordlist
     # It is easier to keep track of data when it is all in the same format (hex)
     words = [common.string_to_hex(word) for word in words]
     
+    # Print number of words
+    print(f"{len(words)} words")
+
     # Print the characters that are deemed readable
     print(f"Readable chars: \"{readable()}\"")
 
     # Sort ciphers from longest to shortest
     ciphers = sorted(ciphers, key=len, reverse=True)
+
+    # Print number of ciphers
+    print(f"{len(ciphers)} ciphertexts")
 
     # Calculate target key length
     # key_len: int = max([len(item) for item in ciphers])
@@ -87,12 +98,10 @@ if __name__ == "__main__":
     for word in words:
         word_str = common.hex_to_string(word)
 
-        avaliable_for_selections = []
+        drags = []
 
         # 4. XOR the hex string from step 2 at each position of the XOR of the two cipher-texts (from step 3)
-        for pos in range(len(cipher_x) - len(word) + 1):
-            # Drag the crib/word to get the possible key
-            # possible_key: str = common.xor_strings(cipher_x[pos:pos+len(word)], word)
+        for pos in range(0, len(cipher_x) - len(word) + 1, 2): # Use a step of 2 since HEX takes up 2 characters when represented as a string
             # Apply the new possible word (crib) to a new theoretical key
             possible_key_parts: list = list(key_parts) # copy list
             possible_key_parts.append({
@@ -106,31 +115,28 @@ if __name__ == "__main__":
             else:
                 # 5. When the result from step 4 is readable text, we guess the English word and expand our crib search.
                 # Use the possible key to try and decrypt all ciphertexts
-                # plaintexts: list[str] = [common.xor_strings(possible_key, cipher[pos:len(word)]) for cipher in ciphers]
-                plaintexts: list[str] = [build_cipher(c, possible_key_parts, key_len) for c in ciphers]
+                plaintexts: list[str] = [build_cipher(cipher, possible_key_parts, key_len) for cipher in ciphers]
 
-                # 6. If the result is not readable text, we try an XOR of the crib word at the next position.
-                # Convert all plaintexts (hex) to readable string, None means it could not be converted (bad format)
-                plaintexts_str: list[Union[None, str]] = [common.try_hex_to_string(item) for item in plaintexts]
-                
-                if all([item and is_readable(item) for item in plaintexts_str]):
-                    # Store for later selection by user
-                    avaliable_for_selections.append({
-                        "pos": pos,
-                        "plaintexts": plaintexts_str
-                    })
+                # Store for later selection by user
+                drags.append({
+                    "pos": pos,
+                    "plaintexts": plaintexts
+                })
 
-        if len(avaliable_for_selections) > 0:
+        # If there are no dragged cribs to select from then there is nothing to do
+        if len(drags) > 0:
+
+            # Print options for user
+            print(f"Pos.\tplaintext")
+            for drag in drags:
+                for plaintext in drag['plaintexts']:
+                    print(f"{drag['pos']}\t{common.try_hex_to_string(plaintext)}\t({plaintext})")
+
             # Print the guessed word
             print(f"Guessed word: {word_str}")
-            
-            # Print options for user
-            for a in avaliable_for_selections:
-                for b in a['plaintexts']:
-                    print(f"{a['pos']}.\t{b}")
 
             # Let the user select
-            selection: str = input(f"Type a comma seperated list of positions, to select the word {word_str} at those position, or \"d\" to discard the word and go to next in the wordlist, or \"q\" to quit the program.")
+            selection: str = input(f"Type positions (seperated by comman), \"d\" to discard or \"q\" to quit: ")
             if (selection == 'd'):
                 print(f"Skipping word {word_str}")
             elif (selection == 'q'):
@@ -138,22 +144,32 @@ if __name__ == "__main__":
                 quit()
             else:
                 try:
-                    selected_positions: list[int] = [int(item) for item in selection.split(',')]
+                    selections: list[int] = [int(item) for item in selection.split(',')]
                 except:
                     print("An exception occurred")
                     quit()
                 
-                print(common.try_hex_to_string(build_key(key_parts, key_len)))
-                for selected_pos in selected_positions:
-                    key_parts.append({
-                        "pos": selected_pos,
-                        "key": word
-                    })
-                    print(f"Added {word_str} at position {selected_pos}")
-                    built_key: str = build_key(key_parts, key_len)
-                    print(f"{common.try_hex_to_string(built_key)} (0x{built_key})")
+                # Clear the terminal
+                os.system('cls' if os.name == 'nt' else 'clear')
 
+                print(common.try_hex_to_string(build_key(key_parts, key_len)))
+                for selection in selections:
+                    if not selection % 2 == 0:
+                        print("Number must be event!")
+                        quit()
+                    else:
+                        key_parts.append({
+                            "pos": selection,
+                            "key": word
+                        })
+                        print(f"Added {word_str} at position {selection}")
+                        built_key: str = build_key(key_parts, key_len)
+                        print(f"{common.try_hex_to_string(built_key)} (0x{built_key})")
+
+        # If the key is of sufficient length then we are done
         if build_key_len(key_parts) >= key_len:
             print("Done!")
             quit()
             
+    print("No more words!")
+    quit()

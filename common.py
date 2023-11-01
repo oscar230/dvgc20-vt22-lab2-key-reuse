@@ -1,5 +1,4 @@
 from typing import Union
-import re
 
 CRIBRESULTFILE = "crib-results.json"
 CIPHERFILE = "attachment-easy"
@@ -7,17 +6,9 @@ WORDFILE = "wordlist"
 RESULTSFILE = "results.json"
 JSONINDENT = 4
 ENCODING = "ASCII"
-
-def is_readable(text: str) -> bool:
-    # Count of allowed characters
-    allowed_count = len(re.findall(r'[A-Za-z0-9 ,."]', text))
-    # If more than a certain percentage of the characters are readable
-    return allowed_count / len(text) > 0.9
-# def is_readable(text: str) -> bool:
-#     readable_chars = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ '#"!#$%&\'*+,-./?@\\^_`\n\r'
-#     return all(char in readable_chars for char in text)
-    # pattern = re.compile("^[a-zA-Z0-9?><;,{}[\]\-_+=!@#$%\^&*|']*$")
-    # return bool(re.match(pattern, text))
+PLACEHOLDER_CHAR: str = '00' # This is the NULL character in the ASCII char set
+PLACEHOLDER_CHAR_DISPLAY: str = '5f' # This is a underscore
+UNREADABLE_REPLACEMENT_CHAR_DISPLAY: str = '7e' # This is... this ~
 
 def xor_strings(hex1, hex2):
     # XOR two HEX strings
@@ -37,3 +28,12 @@ def try_hex_to_string(h: str) -> Union[str, None]:
         result = None
     finally:
         return result
+
+def readable_char_set() -> str:
+    return 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ .123456789'
+
+def is_readable(input: Union[str, None]) -> bool:
+    if input:
+        return all(char in readable_char_set() for char in input)
+    else:
+        return False
