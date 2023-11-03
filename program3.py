@@ -38,7 +38,6 @@ class Cipher:
     def decrypt(self, key: str) -> str:
         return common.xor_strings(self.cipher, key)
 
-
     def decrypt_display(self, key: str) -> str:
         if len(key) == len(self.cipher):
             plaintext: str = ''
@@ -107,15 +106,17 @@ def load_words() -> list[Word]:
 
 def pick_position(keyring: Keyring, word: Word) -> Union[KeyPart, None]:
     pick_options: list = []
-    pick_options.append("## Go back ##")
+    pick_options.append("> Go back")
     for curr_pos in range(0, keyring.key_len - len(word.word) + 2, 2):
-        optional_key_part: KeyPart = KeyPart(curr_pos, word.word)
-        optional_key: str = keyring.build_key(optional_key_part)
+        possible_key_part: KeyPart = KeyPart(curr_pos, word.word)
+        possible_key: str = keyring.build_key(possible_key_part)
 
-        plaintext: str = keyring.cipher_x.decrypt(optional_key)
-        plaintext_display: str = keyring.cipher_x.decrypt_display(optional_key)
-        pick_options.append(f'{curr_pos}\t{common.hex_to_string(plaintext_display)} (hex: {plaintext_display}/{plaintext})')
-    _, index = pick(pick_options, f'Select position for word \"{word}\" for key \"{keyring.build_key(None)}\".\n- \"{common.hex_to_string(common.PADDING_DISPLAY_CHAR)}\" are padding since the key is not yet complete.\n- \"{common.hex_to_string(common.UNREADABLE_DISPLAY_CHAR)}\" are unreadable characters.')
+        plaintext_display_hex: str = keyring.cipher_x.decrypt_display(possible_key)
+        plaintext_display_str: str = common.hex_to_string(plaintext_display_hex)
+        plaintext_hex: str = keyring.cipher_x.decrypt(possible_key)
+
+        pick_options.append(f'{curr_pos}\t{plaintext_display_str} {keyring.cipher_x.cipher} ^ {possible_key} = {plaintext_hex}')
+    _, index = pick(pick_options, f'Select position for word \"{word}\" for key \"{keyring.build_key(None)}\".\n- \"{common.hex_to_string(common.PADDING_DISPLAY_CHAR)}\" are padding since the key is not yet complete.\n- \"{common.hex_to_string(common.UNREADABLE_DISPLAY_CHAR)}\" are unreadable characters.\n- Columns: position, decrypted string, cipher xor ^ key = decrypted')
     if index == 0:
         return None
     else:
@@ -123,7 +124,7 @@ def pick_position(keyring: Keyring, word: Word) -> Union[KeyPart, None]:
 
 def pick_word(words: list[Word]) -> Union[Word, None]:
     pick_options: list = []
-    pick_options.append("## Done ##")
+    pick_options.append("> Done")
     for word in words:
         pick_options.append(f"{word}")
     _, index = pick(pick_options, f'Select a word to drag.')
