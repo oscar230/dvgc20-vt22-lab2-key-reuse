@@ -116,7 +116,7 @@ def pick_position(keyring: Keyring, word: Word) -> Union[KeyPart, None]:
         plaintext_hex: str = keyring.cipher_x.decrypt(possible_key)
 
         pick_options.append(f'{curr_pos}\t{plaintext_display_str} {keyring.cipher_x.cipher} ^ {possible_key} = {plaintext_hex}')
-    _, index = pick(pick_options, f'Select position for word \"{word}\" for key \"{keyring.build_key(None)}\".\n- \"{common.hex_to_string(common.PADDING_DISPLAY_CHAR)}\" are padding since the key is not yet complete.\n- \"{common.hex_to_string(common.UNREADABLE_DISPLAY_CHAR)}\" are unreadable characters.\n- Columns: position, decrypted string, cipher xor ^ key = decrypted')
+    _, index = pick(pick_options, f'Select position for word \"{word}\" (base key \"{keyring.build_key(None)})\".\n- \"{common.hex_to_string(common.PADDING_DISPLAY_CHAR)}\" are padding since the key is not yet complete.\n- \"{common.hex_to_string(common.UNREADABLE_DISPLAY_CHAR)}\" are unreadable characters.\n- Columns: position, plaintext string, cipher 1 and 2 xored ^ possible key = plaintext hex')
     if index == 0:
         return None
     else:
