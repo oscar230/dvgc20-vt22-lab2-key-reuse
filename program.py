@@ -133,7 +133,7 @@ def pick_position(keyring: Keyring, word: Word) -> Union[KeyPart, None]:
 
             valid_possible_keys.append({
                 "key_part": possible_key_part,
-                "text": f'{curr_pos}\t{plaintext_display_str}'#+' {keyring.cipher_x.cipher} ^ {possible_key} = {plaintext_hex}'
+                "text": f'{plaintext_display_str}'#+' {keyring.cipher_x.cipher} ^ {possible_key} = {plaintext_hex}'
             })
 
     # Add prompt options
