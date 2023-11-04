@@ -1,7 +1,7 @@
 from __future__ import annotations
 import common
 from typing import Union
-from pick import pick
+import inquirer
 
 class KeyPart:
     position: int # Position in the hex string
@@ -114,8 +114,10 @@ def load_words() -> list[Word]:
         return [Word(word) for word in words]
 
 def pick_position(keyring: Keyring, word: Word) -> Union[KeyPart, None]:
-    pick_options: list = []
-    pick_options.append("> Go back")
+    # Prepare list for valid possible keys
+    valid_possible_keys: list = []
+
+    # Add options for each valid position
     for curr_pos in range(0, keyring.key_len - len(word.word) + 2, 2):
         possible_key_part: KeyPart = KeyPart(curr_pos, word.word)
 
@@ -125,43 +127,64 @@ def pick_position(keyring: Keyring, word: Word) -> Union[KeyPart, None]:
             plaintext_display_hex: str = keyring.cipher_x.decrypt_display(possible_key)
             plaintext_display_str: str = common.hex_to_string(plaintext_display_hex)
             plaintext_hex: str = keyring.cipher_x.decrypt(possible_key)
-            
-            pick_options.append(f'{curr_pos}\t{plaintext_display_str} {keyring.cipher_x.cipher} ^ {possible_key} = {plaintext_hex}')
-        else:
-            pick_options.append(f'{curr_pos}\tDoes not fit!')
-    _, index = pick(pick_options, f'Select position for word \"{word}\" (base key \"{keyring.build_key(None)})\".\n- \"{common.hex_to_string(common.PADDING_DISPLAY_CHAR)}\" are padding since the key is not yet complete.\n- \"{common.hex_to_string(common.UNREADABLE_DISPLAY_CHAR)}\" are unreadable characters.\n- Columns: position, plaintext string, cipher 1 and 2 xored ^ possible key = plaintext hex')
-    if index == 0:
+
+            valid_possible_keys.append({
+                "key_part": possible_key_part,
+                "text": f'{curr_pos}\t{plaintext_display_str}'#+' {keyring.cipher_x.cipher} ^ {possible_key} = {plaintext_hex}'
+            })
+
+    # Prepare options and add valid possible keys
+    go_back_text: str = "⬅️  Go back"
+    inquirer_options = [
+        inquirer.List(
+            "valid_possible_key",
+            message=f"Choose a position for \"{word}\"",
+            choices=[go_back_text] + [item["text"] for item in valid_possible_keys],
+        )
+    ]
+
+    # Promt for an answer
+    answer = inquirer.prompt(inquirer_options)['valid_possible_key']
+    if answer == go_back_text:
         return None
     else:
-        selected_key_part: KeyPart = KeyPart((index - 1) * 2, word.word)
-        if keyring.does_key_part_fit(selected_key_part):
-            return selected_key_part
-        else:
-            print("Does not fit!")
-            quit()
+        return [item for item in valid_possible_keys if item['text'] == answer][0]
 
 def pick_word(words: list[Word]) -> Union[Word, None]:
-    pick_options: list = []
-    pick_options.append("> Done")
-    for word in words:
-        pick_options.append(f"{word}")
-    _, index = pick(pick_options, f'Select a word to drag.')
-    if index == 0:
+    # Prepare option and add options for each valid position
+    done_text: str = "👍 Done"
+    inquirer_options = [
+        inquirer.List(
+            "word",
+            message="Choose a word",
+            choices=[done_text] + [f'{word}' for word in words],
+        )
+    ]
+
+    # Promt for an answer    
+    answer = inquirer.prompt(inquirer_options)['word']
+
+    if answer == done_text:
+        # Quit command
         return None
     else:
-        return words[index - 1]
+        # Return the answer's word
+        return [word for word in words if f'{word}' == answer][0]
 
 if __name__ == "__main__":
     words: list[Word] = load_words()
     keyring: Keyring = Keyring()
 
-    while not keyring.is_complete():
+    done: bool = False
+    while not (keyring.is_complete() or done):
         word: Union[Word, None] = pick_word(words)
         if word:
             new_key_part: Union[KeyPart, None] = pick_position(keyring, word)
             if new_key_part:
                 keyring.add_key_part(new_key_part)
+        else:
+            done = True
     
     key: str = keyring.build_key(None)
-    print(f"Done!\nKey\t{key}")
+    print(f"Done! 🎉\nKey\t{key}")
     print(common.try_hex_to_string(key))
