@@ -90,7 +90,7 @@ class Keyring:
         # Create a copy of the current key parts
         key_parts: list[KeyPart] = list(self.key_parts)
         # This is the key that will be built upon, all starts out as padding characters and will then be replaced
-        key: str = common.PADDING_CHAR * int(self.key_len / len(common.PADDING_CHAR))
+        key: str = common.PADDING_CHAR * int(self.key_len / 2)
 
         # if an additional key part has been provided, append it to the current key parts
         if additional_key_part:
@@ -100,11 +100,13 @@ class Keyring:
         for key_part in key_parts:
             # Replace the padded characters with the key_parts
             # This assumes that there are no overlapping key parts
-            key = key[:key_part.position] + key_part.key_part + key[key_part.last_position():-1]
+            key = key[:key_part.position] + key_part.key_part + key[key_part.last_position() + 1:]
 
         # Return the final key
         return key
 
+    def is_complete(self) -> bool:
+        return not common.PADDING_CHAR in self.build_key(None)
 
 def load_words() -> list[Word]:
     with open(common.WORDFILE, 'r', encoding = common.ENCODING) as file:
@@ -131,7 +133,12 @@ def pick_position(keyring: Keyring, word: Word) -> Union[KeyPart, None]:
     if index == 0:
         return None
     else:
-        return KeyPart(index - 1, word.word)
+        selected_key_part: KeyPart = KeyPart((index - 1) * 2, word.word)
+        if keyring.does_key_part_fit(selected_key_part):
+            return selected_key_part
+        else:
+            print("Does not fit!")
+            quit()
 
 def pick_word(words: list[Word]) -> Union[Word, None]:
     pick_options: list = []
@@ -148,14 +155,13 @@ if __name__ == "__main__":
     words: list[Word] = load_words()
     keyring: Keyring = Keyring()
 
-    done: bool = False
-    while not done:
+    while not keyring.is_complete():
         word: Union[Word, None] = pick_word(words)
         if word:
             new_key_part: Union[KeyPart, None] = pick_position(keyring, word)
             if new_key_part:
                 keyring.add_key_part(new_key_part)
-        else:
-            done = True
     
-    print(f"Done!\nKey\t{keyring.build_key(None)}")
+    key: str = keyring.build_key(None)
+    print(f"Done!\nKey\t{key}")
+    print(common.try_hex_to_string(key))
