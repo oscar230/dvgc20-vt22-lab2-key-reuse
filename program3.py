@@ -1,7 +1,8 @@
 from __future__ import annotations
 import common
 from typing import Union
-import inquirer
+from prompt import PrompItem
+import prompt
 
 class KeyPart:
     position: int # Position in the hex string
@@ -133,43 +134,18 @@ def pick_position(keyring: Keyring, word: Word) -> Union[KeyPart, None]:
                 "text": f'{curr_pos}\t{plaintext_display_str}'#+' {keyring.cipher_x.cipher} ^ {possible_key} = {plaintext_hex}'
             })
 
-    # Prepare options and add valid possible keys
-    go_back_text: str = "⬅️  Go back"
-    inquirer_options = [
-        inquirer.List(
-            "valid_possible_key",
-            message=f"Choose a position for \"{word}\"",
-            choices=[go_back_text] + [item["text"] for item in valid_possible_keys],
-        )
-    ]
-
-    # Promt for an answer
-    answer = inquirer.prompt(inquirer_options)['valid_possible_key']
-    if answer == go_back_text:
-        return None
-    else:
-        return [item for item in valid_possible_keys if item['text'] == answer][0]
+    # Add prompt options
+    prompt_items: list[PrompItem] = [PrompItem("⬅️  Go back", None)] + [PrompItem(item['text'], item['key_part']) for item in valid_possible_keys]
+    # Promt for an answer   
+    selection: PrompItem = prompt.PromptSelectOne(f"Choose a position for word \"{word}\"", prompt_items)
+    return selection.value
 
 def pick_word(words: list[Word]) -> Union[Word, None]:
-    # Prepare option and add options for each valid position
-    done_text: str = "👍 Done"
-    inquirer_options = [
-        inquirer.List(
-            "word",
-            message="Choose a word",
-            choices=[done_text] + [f'{word}' for word in words],
-        )
-    ]
-
-    # Promt for an answer    
-    answer = inquirer.prompt(inquirer_options)['word']
-
-    if answer == done_text:
-        # Quit command
-        return None
-    else:
-        # Return the answer's word
-        return [word for word in words if f'{word}' == answer][0]
+    # Add prompt options
+    prompt_items: list[PrompItem] = [PrompItem("👍 Done", None)] + [PrompItem(f'{word}', word) for word in words]
+    # Promt for an answer   
+    selection: PrompItem = prompt.PromptSelectOne("Choose a word", prompt_items)
+    return selection.value
 
 if __name__ == "__main__":
     words: list[Word] = load_words()
