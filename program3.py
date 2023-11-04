@@ -72,7 +72,7 @@ class Keyring:
             ciphers: list[str] = [item.replace("\n", "") for item in file.readlines()]
             ciphers = sorted(ciphers, key=len, reverse=True)
             self.cipher_x = Cipher(common.xor_strings(ciphers[0], ciphers[1]))
-            self.key_len = len(ciphers[0])
+            self.key_len = len(self.cipher_x.cipher)
             self.ciphers = [Cipher(item) for item in ciphers]
             self.key_parts = []
 
