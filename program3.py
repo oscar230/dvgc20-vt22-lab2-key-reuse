@@ -3,6 +3,8 @@ import common
 from typing import Union
 from prompt import PrompItem
 import prompt
+import hexconverter
+import xor
 
 class KeyPart:
     position: int # Position in the hex string
@@ -30,10 +32,10 @@ class Word:
     word: str
 
     def __init__(self, word_as_string: str) -> None:
-        self.word = common.string_to_hex(word_as_string)
+        self.word = hexconverter.string_to_hex(word_as_string)
 
     def __str__(self):
-        return common.hex_to_string(self.word)
+        return hexconverter.hex_to_string(self.word)
 
 class Cipher:
     cipher: str
@@ -42,7 +44,7 @@ class Cipher:
         self.cipher = cipher
 
     def decrypt(self, key: str) -> str:
-        return common.xor_strings(self.cipher, key)
+        return xor.xor_strings(self.cipher, key)
 
     def decrypt_display(self, key: str) -> str:
         if len(key) == len(self.cipher):
@@ -52,7 +54,7 @@ class Cipher:
                     # Should be represented by another character than the padding character
                     plaintext += common.PADDING_DISPLAY_CHAR
                 else:
-                    decrypted_char_at_i: str = common.xor_strings(self.cipher[i:i+2], key[i:i+2])
+                    decrypted_char_at_i: str = xor.xor_strings(self.cipher[i:i+2], key[i:i+2])
                     if common.is_readable(decrypted_char_at_i):
                         plaintext += decrypted_char_at_i
                     else:
@@ -72,7 +74,7 @@ class Keyring:
         with open(common.CIPHERFILE, 'r', encoding = common.ENCODING) as file:
             ciphers: list[str] = [item.replace("\n", "") for item in file.readlines()]
             ciphers = sorted(ciphers, key=len, reverse=True)
-            self.cipher_x = Cipher(common.xor_strings(ciphers[0], ciphers[1]))
+            self.cipher_x = Cipher(xor.xor_strings(ciphers[0], ciphers[1]))
             self.key_len = len(self.cipher_x.cipher)
             self.ciphers = [Cipher(item) for item in ciphers]
             self.key_parts = []
@@ -126,7 +128,7 @@ def pick_position(keyring: Keyring, word: Word) -> Union[KeyPart, None]:
             possible_key: str = keyring.build_key(possible_key_part)
 
             plaintext_display_hex: str = keyring.cipher_x.decrypt_display(possible_key)
-            plaintext_display_str: str = common.hex_to_string(plaintext_display_hex)
+            plaintext_display_str: str = hexconverter.hex_to_string(plaintext_display_hex)
             plaintext_hex: str = keyring.cipher_x.decrypt(possible_key)
 
             valid_possible_keys.append({
@@ -163,4 +165,4 @@ if __name__ == "__main__":
     
     key: str = keyring.build_key(None)
     print(f"Done! 🎉\nKey\t{key}")
-    print(common.try_hex_to_string(key))
+    print(hexconverter.try_hex_to_string(key))
