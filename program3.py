@@ -14,18 +14,16 @@ class KeyPart:
     def last_position(self) -> int:
         return self.position + len(self.key_part) - 1
     
-    def is_in_range(self, other_key_part: KeyPart) -> bool:
-        return (
-            self.position <= other_key_part.last_position()
-            and self.last_position() >= other_key_part.position
-        )
-    
     def get_char(self, position: int) -> Union[str, None]:
         try:
             x: int = position - self.position
             return self.key_part[x:x+2]
         except:
             return None
+    
+    def is_in_range(self, position: int) -> bool:
+        # Check if the given position is within the range of this KeyPart
+        return self.position <= position <= self.last_position()
 
 class Word:
     word: str
@@ -86,12 +84,17 @@ class Keyring:
             return False
     
     def does_key_part_fit(self, key_part: KeyPart) -> bool:
-        if key_part.last_position() > self.key_len - 1:
+        if key_part.last_position() >= self.key_len:
+            # The new key part goes beyond the length of the key, so it cannot fit.
             return False
-        for i in range(key_part.position, key_part.last_position() + 1, 2):
-            if any(item for item in self.key_parts if item.is_in_range(i)):
-                return True
-        return False
+        
+        for existing_key_part in self.key_parts:
+            if existing_key_part.is_in_range(key_part.position):
+                # There's an existing key part that overlaps with the new key part.
+                return False
+        
+        # If no overlaps were found, the new key part can fit.
+        return True
 
     def build_key(self, additional_key_part: Union[KeyPart, None]) -> str:
         # Create a copy of the current key parts
@@ -123,13 +126,17 @@ def pick_position(keyring: Keyring, word: Word) -> Union[KeyPart, None]:
     pick_options.append("> Go back")
     for curr_pos in range(0, keyring.key_len - len(word.word) + 2, 2):
         possible_key_part: KeyPart = KeyPart(curr_pos, word.word)
-        possible_key: str = keyring.build_key(possible_key_part)
 
-        plaintext_display_hex: str = keyring.cipher_x.decrypt_display(possible_key)
-        plaintext_display_str: str = common.hex_to_string(plaintext_display_hex)
-        plaintext_hex: str = keyring.cipher_x.decrypt(possible_key)
+        if keyring.does_key_part_fit(possible_key_part):
+            possible_key: str = keyring.build_key(possible_key_part)
 
-        pick_options.append(f'{curr_pos}\t{plaintext_display_str} {keyring.cipher_x.cipher} ^ {possible_key} = {plaintext_hex}')
+            plaintext_display_hex: str = keyring.cipher_x.decrypt_display(possible_key)
+            plaintext_display_str: str = common.hex_to_string(plaintext_display_hex)
+            plaintext_hex: str = keyring.cipher_x.decrypt(possible_key)
+            
+            pick_options.append(f'{curr_pos}\t{plaintext_display_str} {keyring.cipher_x.cipher} ^ {possible_key} = {plaintext_hex}')
+        else:
+            pick_options.append(f'{curr_pos}\tDoes not fit!')
     _, index = pick(pick_options, f'Select position for word \"{word}\" (base key \"{keyring.build_key(None)})\".\n- \"{common.hex_to_string(common.PADDING_DISPLAY_CHAR)}\" are padding since the key is not yet complete.\n- \"{common.hex_to_string(common.UNREADABLE_DISPLAY_CHAR)}\" are unreadable characters.\n- Columns: position, plaintext string, cipher 1 and 2 xored ^ possible key = plaintext hex')
     if index == 0:
         return None
