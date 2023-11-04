@@ -20,9 +20,12 @@ class KeyPart:
             and self.last_position() >= other_key_part.position
         )
     
-    def get_char(self, position: int) -> str:
-        x: int = position - self.position
-        return self.key_part[x:x+2]
+    def get_char(self, position: int) -> Union[str, None]:
+        try:
+            x: int = position - self.position
+            return self.key_part[x:x+2]
+        except:
+            return None
 
 class Word:
     word: str
@@ -31,7 +34,7 @@ class Word:
         self.word = common.string_to_hex(word_as_string)
 
     def __str__(self):
-     return common.hex_to_string(self.word)
+        return common.hex_to_string(self.word)
 
 class Cipher:
     cipher: str
@@ -57,7 +60,7 @@ class Cipher:
                         # Current character cannot be read, represent with something else
                         plaintext += common.UNREADABLE_DISPLAY_CHAR
             return plaintext
-        print("Cannot decrypt cipher if key is not of the same size as the cipher!")
+        print(f"Cannot decrypt cipher if key is not of the same size as the cipher!\nCipher\t{self.cipher}\nKey\t{key}")
         quit()
 
 class Keyring:
@@ -91,17 +94,24 @@ class Keyring:
         return False
 
     def build_key(self, additional_key_part: Union[KeyPart, None]) -> str:
+        # Create a copy of the current key parts
         key_parts: list[KeyPart] = list(self.key_parts)
-        key: str = ''
+        # This is the key that will be built upon, all starts out as padding characters and will then be replaced
+        key: str = common.PADDING_CHAR * int(self.key_len / len(common.PADDING_CHAR))
+
+        # if an additional key part has been provided, append it to the current key parts
         if additional_key_part:
             key_parts.append(additional_key_part)
-        for i in range(0, self.key_len, 2):
-            if any([a for a in key_parts if a.is_in_range(i)]):
-                curr_key_part: KeyPart = [a for a in key_parts if a.is_in_range(i)][0]
-                key += curr_key_part.get_char(i)
-            else:
-                key += common.PADDING_CHAR
+
+        # Itterate over key part
+        for key_part in key_parts:
+            # Replace the padded characters with the key_parts
+            # This assumes that there are no overlapping key parts
+            key = key[:key_part.position] + key_part.key_part + key[key_part.last_position():-1]
+
+        # Return the final key
         return key
+
 
 def load_words() -> list[Word]:
     with open(common.WORDFILE, 'r', encoding = common.ENCODING) as file:
