@@ -1,3 +1,4 @@
+from __future__ import annotations
 import common
 from typing import Union
 from pick import pick
@@ -13,8 +14,11 @@ class KeyPart:
     def last_position(self) -> int:
         return self.position + len(self.key_part) - 1
     
-    def is_in_range(self, position: int) -> bool:
-        return self.position >= position and self.last_position() <= position
+    def is_in_range(self, other_key_part: KeyPart) -> bool:
+        return (
+            self.position <= other_key_part.last_position()
+            and self.last_position() >= other_key_part.position
+        )
     
     def get_char(self, position: int) -> str:
         x: int = position - self.position
