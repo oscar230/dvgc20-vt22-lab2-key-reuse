@@ -20,10 +20,10 @@ class KeyPart:
             return self.key_part[x:x+2]
         except:
             return None
-    
-    def is_in_range(self, position: int) -> bool:
-        # Check if the given position is within the range of this KeyPart
-        return self.position <= position <= self.last_position()
+
+    def overlaps_with(self, other: 'KeyPart') -> bool:
+        # Check if there is any overlap between this KeyPart and another KeyPart
+        return not (self.last_position() < other.position or self.position > other.last_position())
 
 class Word:
     word: str
@@ -84,17 +84,7 @@ class Keyring:
             return False
     
     def does_key_part_fit(self, key_part: KeyPart) -> bool:
-        if key_part.last_position() >= self.key_len:
-            # The new key part goes beyond the length of the key, so it cannot fit.
-            return False
-        
-        for existing_key_part in self.key_parts:
-            if existing_key_part.is_in_range(key_part.position):
-                # There's an existing key part that overlaps with the new key part.
-                return False
-        
-        # If no overlaps were found, the new key part can fit.
-        return True
+        return not any([item.overlaps_with(key_part) for item in self.key_parts])
 
     def build_key(self, additional_key_part: Union[KeyPart, None]) -> str:
         # Create a copy of the current key parts
